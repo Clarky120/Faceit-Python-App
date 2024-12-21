@@ -25,6 +25,17 @@ class RequestHandler(BaseHTTPRequestHandler):
             else:
                 self.send_response(400)
                 self.end_headers()
+        if parsed_url.path == "/getMatchRoom":
+            parsed_url = urlparse(self.path)
+            params = parse_qs(parsed_url.query)
+            if "roomid" in params:
+                room_id = parse_qs(parsed_url.query)["roomid"][0]
+                faceit = FaceitStats
+                output = faceit.match_room(room_id)
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps(output).encode("utf-8"))
 
 
 def main():
