@@ -23,8 +23,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(json.dumps(output).encode("utf-8"))
             else:
-                self.send_response(400)
-                self.end_headers()
+                self.bad_request()
         if parsed_url.path == "/getMatchRoom":
             parsed_url = urlparse(self.path)
             params = parse_qs(parsed_url.query)
@@ -36,6 +35,12 @@ class RequestHandler(BaseHTTPRequestHandler):
                 self.send_header("Content-Type", "application/json")
                 self.end_headers()
                 self.wfile.write(json.dumps(output).encode("utf-8"))
+            else:
+                self.bad_request()
+    
+    def bad_request(self):
+            self.send_response(400)
+            self.end_headers()
 
 
 def main():
