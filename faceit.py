@@ -23,8 +23,6 @@ class FaceitStats:
         match_stats = FaceitStats.match_parser(
             json.loads(match_res.content.decode("utf-8"))["items"]
         )
-
-        print(match_stats)
         return match_stats
 
     def match_parser(match_array):
@@ -32,11 +30,20 @@ class FaceitStats:
             kills = 0
             deaths = 0
             hs_percentage = 0
+            map_dict = {}
 
             for match in match_array:
                 kills += int(match["stats"]["Kills"])
                 deaths += int(match["stats"]["Deaths"])
                 hs_percentage += int(match["stats"]["Headshots %"])
+                if match["stats"]["Map"] in map_dict:
+                    map_dict[match["stats"]["Map"]]["won"] += int(match["stats"]["Result"])
+                    map_dict[match["stats"]["Map"]]["played"] += 1
+                else:
+                    map_dict[match["stats"]["Map"]] = {
+                        "played": 1,
+                        "won": int(match["stats"]["Result"]),
+                    }
 
             average_kills = kills / len(match_array)
             average_deaths = deaths / len(match_array)
@@ -46,7 +53,19 @@ class FaceitStats:
                 "kills": average_kills,
                 "deaths": average_deaths,
                 "hs": average_hs_percentage,
+                "maps": FaceitStats.map_parser(map_dict),
             }
+    
+    def map_parser(map_dict):
+        parsed_maps = {}
+
+        for map in map_dict:
+            parsed_maps[map] = {
+                "played": map_dict[map]["played"],
+                "win %": (100 / map_dict[map]["played"]) * map_dict[map]["won"]
+            }
+        
+        return parsed_maps
 
     def get_req(full_url):
         headers = {
