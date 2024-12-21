@@ -25,6 +25,30 @@ class FaceitStats:
         )
         return match_stats
 
+    def match_room(room_id):
+        match_url = "{}/data/v4/matches/{}".format(base_url, room_id)
+        match_res = FaceitStats.get_req(match_url)
+        match_content = json.loads(match_res.content.decode("utf-8"))
+        return FaceitStats.team_parser(match_content)
+
+    def team_parser(match_content):
+        team_props = ["faction1", "faction2"]
+        team_info = {}
+        for team in team_props:
+            roster = match_content["teams"][team]["roster"]
+            team_info[team] = []
+            for player in roster:
+                stats_url = "{}/data/v4/players/{}/games/cs2/stats".format(
+                    base_url, player["player_id"]
+                )
+                player_stats_res = FaceitStats.get_req(stats_url)
+                player_stats = FaceitStats.match_parser(
+                    json.loads(player_stats_res.content.decode("utf-8"))["items"]
+                )
+                player_stats["player_name"] = player["nickname"]
+                team_info[team].append(player_stats)
+        return team_info
+
     def match_parser(match_array):
         if len(match_array) > 0:
             kills = 0
@@ -37,7 +61,9 @@ class FaceitStats:
                 deaths += int(match["stats"]["Deaths"])
                 hs_percentage += int(match["stats"]["Headshots %"])
                 if match["stats"]["Map"] in map_dict:
-                    map_dict[match["stats"]["Map"]]["won"] += int(match["stats"]["Result"])
+                    map_dict[match["stats"]["Map"]]["won"] += int(
+                        match["stats"]["Result"]
+                    )
                     map_dict[match["stats"]["Map"]]["played"] += 1
                 else:
                     map_dict[match["stats"]["Map"]] = {
@@ -55,16 +81,16 @@ class FaceitStats:
                 "hs": average_hs_percentage,
                 "maps": FaceitStats.map_parser(map_dict),
             }
-    
+
     def map_parser(map_dict):
         parsed_maps = {}
 
         for map in map_dict:
             parsed_maps[map] = {
                 "played": map_dict[map]["played"],
-                "win %": (100 / map_dict[map]["played"]) * map_dict[map]["won"]
+                "win %": round((100 / map_dict[map]["played"]) * map_dict[map]["won"]),
             }
-        
+
         return parsed_maps
 
     def get_req(full_url):
